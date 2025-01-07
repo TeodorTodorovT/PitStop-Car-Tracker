@@ -1,0 +1,35 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories
+.vscode/
+.idea/
+.DS_Store
+
+# Build files
+dist/
+build/
+
+# Dependency directories
+coverage/
+
+# Database and cache
+*.sqlite
+*.sqlite-journal
+*.cache
+*.log
+
+# Temp files
+tmp/
+*.swp
+
+# AWS keys
+.aws/
