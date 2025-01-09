@@ -9,13 +9,18 @@ import { useToast } from '../contexts/ToastContext';
 import logo from '../assets/pitstop-logo.png';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string()
+    .email('Please enter a valid email')
+    .max(50, 'Email cannot exceed 50 characters'),
+  password: z.string()
+    .min(6, 'Password must be at least 6 characters')
+    .max(50, 'Password cannot exceed 50 characters'),
 });
 
 const Login = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
+
   const {
     register,
     handleSubmit,
@@ -41,10 +46,16 @@ const Login = () => {
       });
 
       const result = await response.json();
-      console.log('Server response:', result);
 
       if (!response.ok) {
-        throw new Error(result.errors?.[0]?.msg || result.message || 'Login failed');
+        // Handle different types of errors
+        if (result.errors && Array.isArray(result.errors)) {
+          throw new Error(result.errors[0]?.msg || 'Login failed');
+        } else if (result.message) {
+          throw new Error(result.message);
+        } else {
+          throw new Error('An unexpected error occurred');
+        }
       }
 
       // Store the token
@@ -58,9 +69,8 @@ const Login = () => {
       // Redirect to dashboard
       navigate('/dashboard');
     } catch (error) {
-      console.error('Login error:', error);
       addToast({
-        description: error.message,
+        description: error.message || 'An error occurred while logging in',
         variant: 'error',
       });
     }
@@ -85,14 +95,14 @@ const Login = () => {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" error={errors.email}>
+            <Label htmlFor="email" error={!!errors.email}>
               Email
             </Label>
             <Input
               id="email"
               type="email"
               placeholder="your@email.com"
-              error={errors.email}
+              error={!!errors.email}
               {...register('email')}
             />
             {errors.email && (
@@ -101,14 +111,14 @@ const Login = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" error={errors.password}>
+            <Label htmlFor="password" error={!!errors.password}>
               Password
             </Label>
             <Input
               id="password"
               type="password"
               placeholder="••••••••"
-              error={errors.password}
+              error={!!errors.password}
               {...register('password')}
             />
             {errors.password && (
