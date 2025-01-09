@@ -2,24 +2,20 @@ import User from '../models/userModel.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
-
-
-
 import { errorHandler } from '../utils/errorHandler.js';
 
 // register user
-export const userRegister = async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        // Map express-validator errors to a consistent structure
-        return res.status(400).json({
-            errors: errors.array().map((err) => ({ msg: err.msg })) // Standardize structure
-        });
-    }
-
-    const { username, email, password } = req.body;
-
+export const registerUser = async (req, res) => {
     try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                errors: errors.array().map((err) => ({ msg: err.msg }))
+            });
+        }
+
+        const { username, email, password } = req.body;
+
         let user = await User.findOne({ email });
         if (user) {
             return res.status(400).json({
@@ -35,30 +31,32 @@ export const userRegister = async (req, res) => {
         await user.save();
 
         const payload = { user: { id: user.id } };
-
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
             expiresIn: '24h',
         });
 
         res.status(201).json({ token });
     } catch (err) {
+        // Log error details in development
+        if (process.env.NODE_ENV === 'development') {
+            console.error('Registration error:', err);
+        }
         errorHandler(res, err, 'Failed to register user');
     }
 };
 
-
 // login user
-export const userLogin = async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({
-            errors: errors.array().map((err) => ({ msg: err.msg }))
-        });
-    }
-
-    const { email, password } = req.body;
-
+export const loginUser = async (req, res) => {
     try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                errors: errors.array().map((err) => ({ msg: err.msg }))
+            });
+        }
+
+        const { email, password } = req.body;
+
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({
@@ -80,18 +78,29 @@ export const userLogin = async (req, res) => {
 
         res.json({ token });
     } catch (err) {
+        // Log error details in development
+        if (process.env.NODE_ENV === 'development') {
+            console.error('Login error:', err);
+        }
         errorHandler(res, err, 'Failed to login user');
     }
 };
 
-
 // get user profile
-
 export const getUserProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
+        if (!user) {
+            return res.status(404).json({
+                errors: [{ msg: 'User not found' }]
+            });
+        }
         res.json(user);
     } catch (err) {
+        // Log error details in development
+        if (process.env.NODE_ENV === 'development') {
+            console.error('Profile retrieval error:', err);
+        }
         errorHandler(res, err, 'Failed to retrieve user profile');
     }
 };

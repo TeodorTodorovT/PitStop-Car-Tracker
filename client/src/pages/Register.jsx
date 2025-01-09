@@ -6,28 +6,31 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
-import { useEffect } from 'react';
 import logo from '../assets/pitstop-logo.png';
 
 const registerSchema = z.object({
-  username: z.string().min(2, 'Username must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+  username: z.string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username cannot exceed 30 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+  email: z.string()
+    .email('Please enter a valid email')
+    .max(50, 'Email cannot exceed 50 characters'),
+  password: z.string()
+    .min(6, 'Password must be at least 6 characters')
+    .max(50, 'Password cannot exceed 50 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
 });
 
 const Register = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    trigger,
-    watch,
   } = useForm({
     resolver: zodResolver(registerSchema),
     mode: 'onBlur',
@@ -35,19 +38,8 @@ const Register = () => {
       username: '',
       email: '',
       password: '',
-      confirmPassword: '',
     },
   });
-
-  // Watch password field for confirm password validation
-  const password = watch('password');
-
-  // Update schema with dynamic password matching
-  useEffect(() => {
-    if (password) {
-      trigger('confirmPassword');
-    }
-  }, [password, trigger]);
 
   const onSubmit = async (data) => {
     try {
@@ -56,30 +48,30 @@ const Register = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          username: data.username,
-          email: data.email,
-          password: data.password,
-        }),
+        body: JSON.stringify(data),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.errors?.[0]?.msg || result.message || 'Registration failed');
+        if (result.errors && Array.isArray(result.errors)) {
+          throw new Error(result.errors[0]?.msg || 'Registration failed');
+        } else if (result.message) {
+          throw new Error(result.message);
+        } else {
+          throw new Error('An unexpected error occurred');
+        }
       }
 
       addToast({
-        description: 'Account created successfully. Please log in.',
+        description: 'Registration successful! Please log in.',
         variant: 'success',
       });
 
-      // Redirect to login
       navigate('/login');
     } catch (error) {
-      console.error('Registration error:', error);
       addToast({
-        description: error.message,
+        description: error.message || 'An error occurred during registration',
         variant: 'error',
       });
     }
@@ -98,20 +90,20 @@ const Register = () => {
             Create Account 🚙
           </h1>
           <p className="text-gray-500">
-            Join us to track your car maintenance
+            Enter your details to create your account
           </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username" error={errors.username}>
+            <Label htmlFor="username" error={!!errors.username}>
               Username
             </Label>
             <Input
               id="username"
               type="text"
               placeholder="johndoe"
-              error={errors.username}
+              error={!!errors.username}
               {...register('username')}
             />
             {errors.username && (
@@ -120,14 +112,14 @@ const Register = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" error={errors.email}>
+            <Label htmlFor="email" error={!!errors.email}>
               Email
             </Label>
             <Input
               id="email"
               type="email"
               placeholder="your@email.com"
-              error={errors.email}
+              error={!!errors.email}
               {...register('email')}
             />
             {errors.email && (
@@ -136,36 +128,18 @@ const Register = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" error={errors.password}>
+            <Label htmlFor="password" error={!!errors.password}>
               Password
             </Label>
             <Input
               id="password"
               type="password"
               placeholder="••••••••"
-              error={errors.password}
+              error={!!errors.password}
               {...register('password')}
             />
             {errors.password && (
               <p className="text-sm text-red-500">{errors.password.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword" error={errors.confirmPassword}>
-              Confirm Password
-            </Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="••••••••"
-              error={errors.confirmPassword}
-              {...register('confirmPassword')}
-            />
-            {errors.confirmPassword && (
-              <p className="text-sm text-red-500">
-                {errors.confirmPassword.message}
-              </p>
             )}
           </div>
 
@@ -174,7 +148,7 @@ const Register = () => {
             className="w-full"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Creating account...' : 'Create account'}
+            {isSubmitting ? 'Creating Account...' : 'Create Account'}
           </Button>
         </form>
 
