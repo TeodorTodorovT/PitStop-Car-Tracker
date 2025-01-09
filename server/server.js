@@ -9,7 +9,14 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// CORS Configuration
+app.use(cors({
+    origin: 'http://localhost:5173', // Vite's default port
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(json());
 
 // MongoDB Connection
