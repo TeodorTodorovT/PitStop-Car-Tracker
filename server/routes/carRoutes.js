@@ -1,5 +1,5 @@
 import express from 'express';
-import { addCar } from '../controllers/carController.js';
+import { addCar, updateCar, deleteCar } from '../controllers/carController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { check, validationResult } from 'express-validator';
 import multer from 'multer';
@@ -75,40 +75,37 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
-// Add a new car (protected route)
-router.post('/', protect, upload, validateCar, async (req, res) => {
+// Get a single car by ID
+router.get('/:id', protect, async (req, res) => {
     try {
-        // Log the request body for debugging
-        console.log('Request body:', req.body);
-
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                errors: errors.array()
+        const car = await Car.findById(req.params.id);
+        
+        if (!car) {
+            return res.status(404).json({
+                errors: [{ msg: 'Car not found' }]
             });
         }
 
-        const { make, model, year, vin, licensePlate } = req.body;
-        
-        // Convert year to number
-        const yearNum = parseInt(year, 10);
+        // Make sure user owns car
+        if (car.user.toString() !== req.user.id) {
+            return res.status(401).json({
+                errors: [{ msg: 'Not authorized to view this car' }]
+            });
+        }
 
-        const car = new Car({
-            user: req.user.id,
-            make,
-            model,
-            year: yearNum,
-            vin,
-            licensePlate,
-            image: req.file ? req.file.location : null
-        });
-
-        await car.save();
-
-        res.status(201).json(car);
+        res.json(car);
     } catch (err) {
-        errorHandler(res, err, 'Failed to add car');
+        errorHandler(res, err, 'Failed to fetch car');
     }
 });
+
+// Add a new car (protected route)
+router.post('/', protect, upload, validateCar, addCar);
+
+// Update a car (protected route)
+router.put('/:id', protect, upload, validateCar, updateCar);
+
+// Delete a car (protected route)
+router.delete('/:id', protect, deleteCar);
 
 export default router; 

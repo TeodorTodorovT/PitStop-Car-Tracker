@@ -145,7 +145,7 @@ const Register = () => {
 
           <Button
             type="submit"
-            className="w-full"
+            className="w-full bg-primary hover:bg-primary/90 text-white"
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Creating Account...' : 'Create Account'}
@@ -157,7 +157,7 @@ const Register = () => {
             Already have an account?{' '}
             <Button
               variant="ghost"
-              className="text-primary hover:text-primary/80 p-0"
+              className="text-primary hover:text-primary/90 p-0"
               onClick={() => navigate('/login')}
             >
               Sign in
