@@ -80,7 +80,7 @@ const AddCarForm = ({ onSuccess }) => {
     <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl mx-auto">
       <div className="text-center mb-8">
         <h3 className="text-2xl font-bold text-primary mb-2">Add Your Car 🚗</h3>
-        <p className="text-gray-500">Fill in your car's details below</p>
+        <p className="text-gray-500">Fill in your car&apos;s details below</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -231,8 +231,8 @@ const AddCarForm = ({ onSuccess }) => {
         <div className="flex justify-end pt-4">
           <Button
             type="submit"
+            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white"
             disabled={isSubmitting}
-            className="w-full md:w-auto text-lg py-3 px-8"
           >
             {isSubmitting ? 'Adding Car...' : 'Add Car'}
           </Button>
