@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import userRoutes from './routes/userRoutes.js';
 import carRoutes from './routes/carRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -32,6 +33,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/cars', carRoutes);
+app.use('/api/documents', documentRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)

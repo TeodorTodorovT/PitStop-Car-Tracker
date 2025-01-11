@@ -99,4 +99,65 @@ export const carsApi = {
     fetchWithAuth(`/cars/${id}`, {
       method: 'DELETE',
     }),
+};
+
+// Documents API
+export const documentsApi = {
+  // Get all documents for a car
+  getDocuments: (carId) => fetchWithAuth(`/documents/car/${carId}`),
+  
+  // Get a single document
+  getDocument: (id) => fetchWithAuth(`/documents/${id}`),
+  
+  // Add a new document
+  addDocument: async (formData) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_URL}/documents`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.errors?.[0]?.msg || 'Failed to add document');
+    }
+    
+    return response.json();
+  },
+  
+  // Update a document
+  updateDocument: async (id, documentData) => {
+    const formData = new FormData();
+    Object.entries(documentData).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        if (key === 'file') {
+          if (value instanceof FileList && value.length > 0) {
+            formData.append(key, value[0]);
+          } else if (value instanceof File) {
+            formData.append(key, value);
+          }
+        } else {
+          formData.append(key, value);
+        }
+      }
+    });
+    
+    return fetchWithAuth(`/documents/${id}`, {
+      method: 'PUT',
+      body: formData,
+    });
+  },
+  
+  // Delete a document
+  deleteDocument: (id) => 
+    fetchWithAuth(`/documents/${id}`, {
+      method: 'DELETE',
+    }),
 }; 
