@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useToast } from '../../contexts/ToastContext';
-import { Button } from '../ui/Button';
+import Button from '../ui/Button';
 import PropTypes from 'prop-types';
 
-const AddCarForm = ({ onSuccess }) => {
+const AddCarForm = ({ onSuccess, onCancel }) => {
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
     mode: 'onBlur'
   });
-  const { addToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -28,45 +26,23 @@ const AddCarForm = ({ onSuccess }) => {
   const onSubmit = async (data) => {
     try {
       setIsSubmitting(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       const formData = new FormData();
-      formData.append('make', data.make);
-      formData.append('model', data.model);
-      formData.append('year', data.year);
-      formData.append('licensePlate', data.licensePlate);
+      formData.append('make', data.make.trim());
+      formData.append('model', data.model.trim());
+      formData.append('year', Number(data.year));
+      formData.append('licensePlate', data.licensePlate.trim());
       if (data.vin) {
-        formData.append('vin', data.vin);
+        formData.append('vin', data.vin.trim());
       }
       if (data.image && data.image[0]) {
         formData.append('image', data.image[0]);
       }
 
-      const response = await fetch('http://localhost:5000/api/cars', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.errors?.[0]?.msg || 'Failed to add car');
+      const result = await onSuccess(formData);
+      if (result) {
+        reset();
+        setImagePreview(null);
       }
-
-      const newCar = await response.json();
-      onSuccess(newCar);
-      reset();
-      setImagePreview(null);
-    } catch (error) {
-      addToast({
-        description: error.message,
-        variant: 'error'
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -228,7 +204,15 @@ const AddCarForm = ({ onSuccess }) => {
           )}
         </div>
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end gap-4 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="w-full md:w-auto bg-white hover:bg-gray-100 text-gray-900 border border-gray-200"
+          >
+            Cancel
+          </Button>
           <Button
             type="submit"
             className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white"
@@ -243,7 +227,8 @@ const AddCarForm = ({ onSuccess }) => {
 };
 
 AddCarForm.propTypes = {
-  onSuccess: PropTypes.func.isRequired
+  onSuccess: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired
 };
 
 export default AddCarForm; 

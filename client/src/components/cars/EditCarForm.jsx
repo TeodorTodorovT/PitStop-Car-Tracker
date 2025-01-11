@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useToast } from '../../contexts/ToastContext';
-import { Button } from '../ui/Button';
+import Button from '../ui/Button';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import PropTypes from 'prop-types';
@@ -90,48 +90,19 @@ const EditCarForm = ({ initialData, onSuccess, onCancel }) => {
   const onSubmit = async (data) => {
     try {
       setIsSubmitting(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const formData = new FormData();
-      formData.append('make', data.make);
-      formData.append('model', data.model);
-      formData.append('year', data.year);
-      formData.append('licensePlate', data.licensePlate);
-      if (data.vin) {
-        formData.append('vin', data.vin);
-      }
-      if (data.image && data.image[0]) {
-        formData.append('image', data.image[0]);
-      }
-
-      const carId = initialData?._id || id;
-      const response = await fetch(`http://localhost:5000/api/cars/${carId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.errors?.[0]?.msg || 'Failed to update car');
-      }
-
-      const updatedCar = await response.json();
-
-      addToast({
-        description: 'Car updated successfully',
-        variant: 'success'
-      });
+      const formData = {
+        make: data.make,
+        model: data.model,
+        year: data.year,
+        licensePlate: data.licensePlate,
+        vin: data.vin || undefined,
+        image: data.image,
+      };
 
       if (onSuccess) {
-        onSuccess(updatedCar);
+        await onSuccess(formData);
       } else {
-        navigate(`/dashboard/cars/${carId}`);
+        navigate(`/dashboard/cars/${id}`);
       }
     } catch (error) {
       addToast({
