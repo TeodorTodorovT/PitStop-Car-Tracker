@@ -1,31 +1,44 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ToastContextProvider } from './contexts/ToastContext';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ToastProvider } from './contexts/ToastContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CarDetails from './pages/CarDetails';
-import EditCarForm from './components/cars/EditCarForm';
+import EditCar from './pages/EditCar';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      cacheTime: 1000 * 60 * 30, // 30 minutes
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => {
   return (
-    <Router>
-      <ToastContextProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/cars/:id" element={<CarDetails />} />
-          <Route path="/dashboard/cars/:id/edit" element={
-            <div className="min-h-screen bg-bgColor py-8">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <EditCarForm />
-              </div>
-            </div>
-          } />
-          <Route path="/" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </ToastContextProvider>
-    </Router>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/cars/:id" element={<CarDetails />} />
+              <Route path="/dashboard/cars/:id/edit" element={<EditCar />} />
+              <Route path="*" element={<Login />} />
+            </Routes>
+          </Router>
+        </ToastProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
