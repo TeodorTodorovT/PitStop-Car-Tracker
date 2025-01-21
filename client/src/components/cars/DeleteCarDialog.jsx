@@ -6,10 +6,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/Dialog";
-import Button from "../ui/Button";
+import { Button } from "../ui/Button";
 import PropTypes from 'prop-types';
 
 const DeleteCarDialog = ({ isOpen, onClose, onConfirm, carName }) => {
+  const handleDelete = async () => {
+    try {
+      await onConfirm();
+      onClose();
+    } catch (error) {
+      console.error('Error deleting car:', error);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -21,6 +30,7 @@ const DeleteCarDialog = ({ isOpen, onClose, onConfirm, carName }) => {
         </DialogHeader>
         <DialogFooter className="flex gap-3 mt-6">
           <Button
+            type="button"
             variant="outline"
             onClick={onClose}
             className="flex-1 sm:flex-none"
@@ -28,8 +38,9 @@ const DeleteCarDialog = ({ isOpen, onClose, onConfirm, carName }) => {
             Cancel
           </Button>
           <Button
+            type="button"
             variant="destructive"
-            onClick={onConfirm}
+            onClick={handleDelete}
             className="flex-1 sm:flex-none bg-red-600 hover:bg-red-700"
           >
             Delete

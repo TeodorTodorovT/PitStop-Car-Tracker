@@ -2,6 +2,7 @@ import Document from '../models/documentModel.js';
 import { validationResult } from 'express-validator';
 import { errorHandler } from '../utils/errorHandler.js';
 import { deleteS3Object } from '../config/aws.js';
+import s3 from '../config/aws.js';
 
 // Add a new document
 export const addDocument = async (req, res) => {
@@ -15,25 +16,25 @@ export const addDocument = async (req, res) => {
 
         const { type, title, description, carId, expiryDate } = req.body;
         
-        if (!req.file) {
-            return res.status(400).json({
-                errors: [{ msg: 'Please upload a file' }]
-            });
-        }
-
-        const document = new Document({
+        // Create document object with required fields
+        const documentData = {
             user: req.user.id,
             car: carId,
             type,
             title,
             description,
-            expiryDate,
-            fileUrl: req.file.location,
-            fileName: req.file.originalname,
-            fileType: req.file.mimetype,
-            fileSize: req.file.size
-        });
+            expiryDate
+        };
 
+        // Add file information if a file was uploaded
+        if (req.file) {
+            documentData.fileUrl = req.file.location;
+            documentData.fileName = req.file.originalname;
+            documentData.fileType = req.file.mimetype;
+            documentData.fileSize = req.file.size;
+        }
+
+        const document = new Document(documentData);
         await document.save();
 
         res.status(201).json(document);
@@ -90,47 +91,76 @@ export const updateDocument = async (req, res) => {
             });
         }
 
-        const { type, title, description, expiryDate } = req.body;
-        
-        let document = await Document.findById(req.params.id);
-        
+        const { id } = req.params;
+        const { carId } = req.body;
+
+        if (!carId) {
+            return res.status(400).json({
+                errors: [{ msg: 'Car ID is required' }]
+            });
+        }
+
+        // Find the document and check ownership
+        const document = await Document.findOne({
+            _id: id,
+            user: req.user.id,
+            car: carId
+        });
+
         if (!document) {
             return res.status(404).json({
                 errors: [{ msg: 'Document not found' }]
             });
         }
 
-        // Check document ownership
-        if (document.user.toString() !== req.user.id) {
-            return res.status(401).json({
-                errors: [{ msg: 'Not authorized to update this document' }]
-            });
+        // Handle file removal if requested
+        if (req.body.removeFile === 'true' && document.fileUrl) {
+            // Delete the file from S3
+            const key = document.fileUrl.split('/').pop();
+            await s3.deleteObject({
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: key
+            }).promise();
+
+            // Clear file-related fields
+            document.fileUrl = undefined;
+            document.fileName = undefined;
+            document.fileType = undefined;
+            document.fileSize = undefined;
         }
 
-        // If there's a new file and an old file exists, delete the old one
-        if (req.file && document.fileUrl) {
-            await deleteS3Object(document.fileUrl);
-        }
-
-        // Update fields
-        document.type = type;
-        document.title = title;
-        document.description = description;
-        document.expiryDate = expiryDate;
-        
-        // Update file information if new file is uploaded
+        // Handle new file upload if provided
         if (req.file) {
+            // If there's an existing file, delete it first
+            if (document.fileUrl) {
+                const key = document.fileUrl.split('/').pop();
+                await s3.deleteObject({
+                    Bucket: process.env.AWS_BUCKET_NAME,
+                    Key: key
+                }).promise();
+            }
+
+            // Update with new file information
             document.fileUrl = req.file.location;
             document.fileName = req.file.originalname;
             document.fileType = req.file.mimetype;
             document.fileSize = req.file.size;
         }
 
+        // Update other fields
+        document.title = req.body.title;
+        document.type = req.body.type;
+        document.description = req.body.description;
+        document.expiryDate = req.body.expiryDate || null;
+
         await document.save();
 
         res.json(document);
-    } catch (err) {
-        errorHandler(res, err, 'Failed to update document');
+    } catch (error) {
+        console.error('Error updating document:', error);
+        res.status(500).json({
+            errors: [{ msg: 'Server error while updating document' }]
+        });
     }
 };
 

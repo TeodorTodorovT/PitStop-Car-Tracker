@@ -14,7 +14,7 @@ const documentSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['insurance', 'registration', 'tax', 'maintenance', 'other']
+    enum: ['insurance', 'registration', 'tax', 'other']
   },
   title: {
     type: String,
@@ -30,19 +30,19 @@ const documentSchema = new mongoose.Schema({
   },
   fileUrl: {
     type: String,
-    required: true
+    required: false
   },
   fileName: {
     type: String,
-    required: true
+    required: false
   },
   fileType: {
     type: String,
-    required: true
+    required: false
   },
   fileSize: {
     type: Number,
-    required: true
+    required: false
   },
   expiryDate: {
     type: Date

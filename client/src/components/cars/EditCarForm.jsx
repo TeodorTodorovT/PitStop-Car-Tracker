@@ -5,11 +5,13 @@ import Button from '../ui/Button';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import PropTypes from 'prop-types';
+import { useQueryClient } from '@tanstack/react-query';
 
 const EditCarForm = ({ initialData, onSuccess, onCancel }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(!initialData);
   const [imagePreview, setImagePreview] = useState(initialData?.image || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,23 +92,63 @@ const EditCarForm = ({ initialData, onSuccess, onCancel }) => {
   const onSubmit = async (data) => {
     try {
       setIsSubmitting(true);
-      const formData = {
-        make: data.make,
-        model: data.model,
-        year: data.year,
-        licensePlate: data.licensePlate,
-        vin: data.vin || undefined,
-        image: data.image,
-      };
+      const formData = new FormData();
+      
+      // Add all form fields to FormData
+      formData.append('make', data.make);
+      formData.append('model', data.model);
+      formData.append('year', data.year);
+      formData.append('licensePlate', data.licensePlate);
+      
+      if (data.vin) {
+        formData.append('vin', data.vin);
+      }
+      
+      // Only append image if a new file was selected
+      if (data.image?.[0]) {
+        formData.append('image', data.image[0]);
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`http://localhost:5000/api/cars/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update car');
+      }
+
+      const updatedCar = await response.json();
+      
+      // Invalidate both the cars list and the specific car query
+      queryClient.invalidateQueries(['cars']);
+      queryClient.invalidateQueries(['cars', id]);
+      
+      // Update the cache directly with the new data
+      queryClient.setQueryData(['cars', id], updatedCar);
+
+      addToast({
+        description: 'Car updated successfully',
+        variant: 'success'
+      });
 
       if (onSuccess) {
-        await onSuccess(formData);
+        await onSuccess(updatedCar);
       } else {
         navigate(`/dashboard/cars/${id}`);
       }
     } catch (error) {
       addToast({
-        description: error.message,
+        description: error.message || 'Failed to update car',
         variant: 'error'
       });
     } finally {
@@ -127,10 +169,10 @@ const EditCarForm = ({ initialData, onSuccess, onCancel }) => {
   const errorClasses = "mt-1 text-sm text-red-500";
 
   return (
-    <>
+    <div className="bg-[#F3F8FF] p-6">
       {!initialData && (
         <Button
-          variant="outline"
+          variant="secondary"
           className="mb-6 flex items-center gap-2"
           onClick={() => navigate(`/dashboard/cars/${id}`)}
         >
@@ -293,23 +335,22 @@ const EditCarForm = ({ initialData, onSuccess, onCancel }) => {
           <div className="flex justify-end gap-4 pt-4">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               onClick={onCancel || (() => navigate(`/dashboard/cars/${id}`))}
-              className="w-full md:w-auto bg-white hover:bg-gray-100 text-gray-900 border border-gray-200"
             >
               Cancel
             </Button>
             <Button
               type="submit"
+              variant="primary"
               disabled={isSubmitting}
-              className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white"
             >
               {isSubmitting ? 'Updating...' : 'Update Car'}
             </Button>
           </div>
         </form>
       </div>
-    </>
+    </div>
   );
 };
 

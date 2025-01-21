@@ -78,7 +78,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bgColor">
+    <div className="flex min-h-screen items-center justify-center bg-[#F3F8FF] p-8">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-3xl shadow-xl">
         <div className="space-y-2 text-center">
           <img 
