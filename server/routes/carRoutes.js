@@ -4,41 +4,38 @@ import { protect } from '../middleware/authMiddleware.js';
 import { check, validationResult } from 'express-validator';
 import multer from 'multer';
 import multerS3 from 'multer-s3';
-import s3Client, { s3Config } from '../config/aws.js';
+import { S3Client } from '@aws-sdk/client-s3';
 import path from 'path';
 import Car from '../models/carModel.js';
 import { errorHandler } from '../utils/errorHandler.js';
+import { fileURLToPath } from 'url';
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Configure multer for S3 upload
+// S3 Configuration
+const s3 = new S3Client({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  }
+});
+
 const upload = multer({
-    storage: multerS3({
-        s3: s3Client,
-        bucket: s3Config.bucketName,
-        contentType: multerS3.AUTO_CONTENT_TYPE,
-        metadata: function (req, file, cb) {
-            cb(null, { fieldName: file.fieldname });
-        },
-        key: function (req, file, cb) {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            cb(null, 'cars/' + uniqueSuffix + path.extname(file.originalname));
-        }
-    }),
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.AWS_BUCKET_NAME,
+    metadata: function (req, file, cb) {
+      cb(null, { fieldName: file.fieldname });
     },
-    fileFilter: function (req, file, cb) {
-        const filetypes = /jpeg|jpg|png|webp/;
-        const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error('Only image files (jpeg, jpg, png, webp) are allowed!'));
+    key: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, 'cars/' + uniqueSuffix + path.extname(file.originalname));
     }
-}).single('image');
+  })
+});
 
 // Validation middleware for adding a car
 const validateCar = [
@@ -100,10 +97,10 @@ router.get('/:id', protect, async (req, res) => {
 });
 
 // Add a new car (protected route)
-router.post('/', protect, upload, validateCar, addCar);
+router.post('/', protect, upload.single('image'), validateCar, addCar);
 
 // Update a car (protected route)
-router.put('/:id', protect, upload, validateCar, updateCar);
+router.put('/:id', protect, upload.single('image'), validateCar, updateCar);
 
 // Delete a car (protected route)
 router.delete('/:id', protect, deleteCar);

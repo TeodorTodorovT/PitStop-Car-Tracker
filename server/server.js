@@ -24,7 +24,7 @@ fs.mkdirSync(uploadsDir, { recursive: true });
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
         ? ['https://pit-stop-car-tracker.vercel.app']
-        : 'http://localhost:5173',
+        : ['http://localhost:3000', 'http://localhost:5173'],
     credentials: true
 }));
 app.use(express.json());
