@@ -1,36 +1,50 @@
-import { useToast } from '../../contexts/ToastContext';
-import { cn } from '../../lib/utils';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle, XCircle } from 'lucide-react';
+import PropTypes from 'prop-types';
 
-export const Toast = () => {
-  const { toasts, removeToast } = useToast();
-
+const Toast = ({ toasts, removeToast }) => {
   return (
-    <div className="fixed z-50 flex flex-col gap-2 bottom-4 left-1/2 -translate-x-1/2 md:left-auto md:right-4 md:translate-x-0">
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={cn(
-            'min-w-[300px] p-4 rounded-lg shadow-lg flex items-center gap-2 animate-slide-in',
-            toast.variant === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-          )}
-        >
-          {toast.variant === 'success' ? (
-            <CheckCircle2 className="h-5 w-5" />
-          ) : (
-            <XCircle className="h-5 w-5" />
-          )}
-          <p className="flex-1">{toast.description}</p>
-          <button
-            onClick={() => removeToast(toast.id)}
-            className="text-white/80 hover:text-white"
+    <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2">
+      <AnimatePresence>
+        {toasts.map((toast) => (
+          <motion.div
+            key={toast.id}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-lg ${
+              toast.variant === 'success' ? 'bg-green-600' : 'bg-red-600'
+            }`}
           >
-            ✕
-          </button>
-        </div>
-      ))}
+            {toast.variant === 'success' ? (
+              <CheckCircle className="h-5 w-5" />
+            ) : (
+              <XCircle className="h-5 w-5" />
+            )}
+            <p>{toast.description}</p>
+            <button
+              onClick={() => removeToast(toast.id)}
+              className="ml-auto rounded-full p-1 hover:bg-white/20"
+              aria-label="Close toast"
+            >
+              <XCircle className="h-4 w-4" />
+            </button>
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
+};
+
+Toast.propTypes = {
+  toasts: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      description: PropTypes.string.isRequired,
+      variant: PropTypes.oneOf(['success', 'error']).isRequired
+    })
+  ).isRequired,
+  removeToast: PropTypes.func.isRequired
 };
 
 export default Toast; 

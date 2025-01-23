@@ -133,22 +133,7 @@ export const documentsApi = {
   },
   
   // Update a document
-  updateDocument: async (id, documentData) => {
-    const formData = new FormData();
-    Object.entries(documentData).forEach(([key, value]) => {
-      if (value !== undefined && value !== '') {
-        if (key === 'file') {
-          if (value instanceof FileList && value.length > 0) {
-            formData.append(key, value[0]);
-          } else if (value instanceof File) {
-            formData.append(key, value);
-          }
-        } else {
-          formData.append(key, value);
-        }
-      }
-    });
-    
+  updateDocument: async (id, formData) => {
     return fetchWithAuth(`/documents/${id}`, {
       method: 'PUT',
       body: formData,
