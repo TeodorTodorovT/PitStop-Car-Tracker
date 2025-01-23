@@ -3,6 +3,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import ErrorBoundary from './components/ErrorBoundary';
+import AuthLayout from './components/layout/AuthLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -29,9 +30,10 @@ const App = () => {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/cars/:id" element={<CarDetails />} />
-              <Route path="/dashboard/cars/:id/edit" element={<EditCar />} />
+              <Route path="/dashboard" element={<AuthLayout><Dashboard /></AuthLayout>} />
+              <Route path="/dashboard/cars/:id" element={<AuthLayout><CarDetails /></AuthLayout>} />
+              <Route path="/dashboard/cars/:id/edit" element={<AuthLayout><EditCar /></AuthLayout>} />
+              <Route path="/" element={<AuthLayout><Dashboard /></AuthLayout>} />
               <Route path="*" element={<Login />} />
             </Routes>
           </Router>
